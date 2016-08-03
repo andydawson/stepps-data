@@ -14,7 +14,8 @@ us.shp <- readShapeLines('data/map_data/us_alb.shp', proj4string=CRS('+init=epsg
 #
 
 # comp.nc = nc_open('data/composition/PLScomposition_western_0.2-release.nc')
-comp.nc = nc_open('data/composition/composition_midwest_v0.3.nc')
+# comp.nc = nc_open('data/composition/composition_midwest_v0.3.nc')
+comp.nc = nc_open('data/composition/stat/composition_v0.4.nc')
 mask.nc = nc_open('data/composition/paleonmask.nc')
 
 taxa = nc.get.variable.list(comp.nc)
@@ -44,6 +45,9 @@ domain    = ncvar_get(mask.nc, 'domain')
 westernDomainX <- 1:146  # thru x=1093000 out of 1:296
 westernDomainY <- 1:180  # full N-S
 
+comp.x <- comp.x[westernDomainX]
+comp.y <- comp.y[westernDomainY]
+
 # For "region", the codes are:
 # 1: New England except Maine
 # 2: Illinois
@@ -72,9 +76,9 @@ coords  = expand.grid(x=comp.x, y=comp.y)
 pm = list()
 counts = matrix(NA, nrow=length(coords[,1]), ncol=(length(comp)))
 for (i in 1:length(comp)){
-  pm[[i]] = apply(comp[[i]], c(1,2), 'mean')  
+  pm[[i]] = apply(comp[[i]][westernDomainX, westernDomainY,], c(1,2), 'mean')  
   # reverse the y axis
-  pm[[i]] = pm[[i]][,ncol(pm[[i]]):1]
+#   pm[[i]] = pm[[i]][,ncol(pm[[i]]):1]
   counts[,i] = as.vector(pm[[i]])
 }
 names(pm) = taxa
@@ -82,7 +86,10 @@ colnames(counts) = taxa
 
 comp.df = data.frame(x=coords$x, y=coords$y, region=as.vector(region), water=as.vector(water))
 veg = cbind(comp.df, counts)
-veg = veg[!is.na(veg$region) & (veg$water<100),]
+veg = veg[!is.na(veg$region),]
+
+# do we need to exclude interior cells?
+# veg2 = veg[(veg$water<100),]
 
 # check the orientation!
 library(ggplot2)
@@ -92,7 +99,7 @@ d
 # don't want the code, want the state name
 veg$region = reg_codes[veg$region]
 
-write.table(veg, file='data/composition/composition_v0.3.csv', sep=',', row.names=F)
+write.table(veg, file='data/composition/composition_v0.5.csv', sep=',', row.names=F)
 
 
 
